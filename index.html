@@ -303,6 +303,12 @@
   .card p{margin:18px 30px 22px!important;color:#43566c!important;font-family:"Myriad Pro","Myriad Pro Regular","Source Sans 3","Segoe UI",system-ui,sans-serif;font-size:13.5px;font-weight:400;}
   .card label{display:block;text-align:left;font-family:"Myriad Pro","Myriad Pro Regular","Source Sans 3","Segoe UI",system-ui,sans-serif;font-size:12px;font-weight:600;color:#34495e;margin:0 30px 5px;}
   .card input{width:calc(100% - 60px);padding:12px 13px;border:1px solid #b8c6d5;border-radius:4px;font-family:"Myriad Pro","Myriad Pro Regular","Source Sans 3","Segoe UI",system-ui,sans-serif;font-size:14px;font-weight:400;margin:0 30px 15px;}
+  .card .name-hint{text-align:left;margin:-9px 30px 16px;font-family:"Myriad Pro","Myriad Pro Regular","Source Sans 3","Segoe UI",system-ui,sans-serif;
+    font-size:12px;line-height:1.45;color:#43566c;}
+  .card .name-hint b{color:#14283d;font-weight:700;}
+  .card .name-hint span{color:#61758a;}
+  #nameInput{text-transform:uppercase;}
+  #nameInput::placeholder{text-transform:none;}
   .card input:focus{outline:3px solid rgba(26,115,186,.22);border-color:#0c4f8a;}
   .card .navctl.primary{width:calc(100% - 60px)!important;margin:10px 30px 30px!important;background:#0c4f8a;border-radius:4px;
     font-family:"Myriad Pro","Myriad Pro Regular","Source Sans 3","Segoe UI",system-ui,sans-serif;font-size:14px;font-weight:700;letter-spacing:.2px;}
@@ -423,7 +429,8 @@
     <h2>SAT Reading &amp; Writing Practice</h2>
     <p style="color:var(--muted);font-size:13.5px;">Enter your name and class to begin.</p>
     <label for="nameInput">Full name</label>
-    <input type="text" id="nameInput" placeholder="Full name">
+    <input type="text" id="nameInput" placeholder="Full name" autocomplete="off" spellcheck="false" oninput="normalizeNameInput(this)">
+    <div class="name-hint">Write your name in <b>CAPITAL LETTERS</b>, <b>no accents</b>.<br><span>Viết tên <b>IN HOA</b>, <b>KHÔNG dấu</b>.</span></div>
     <label for="clsInput">Class</label>
     <input type="text" id="clsInput" placeholder="Class">
     <button class="navctl primary" style="width:100%;margin-top:6px;" onclick="startTest()">Start Test</button>
@@ -2015,8 +2022,30 @@ function submitReport(){
   alert("Thanks — your report has been sent.");
 }
 
+/* Tên học sinh: tự chuyển sang IN HOA, KHÔNG dấu ngay khi gõ (giữ vị trí con trỏ).
+   Lưu ý bộ gõ Telex/VNI: chờ gõ xong từ (compositionend) rồi mới chuẩn hoá. */
+function toPlainUpper(str){
+  return String(str).normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/đ/g,'d').replace(/Đ/g,'D').toUpperCase();
+}
+function normalizeNameInput(el, ev){
+  if(el._composing) return;
+  const v = el.value, fixed = toPlainUpper(v);
+  if(v === fixed) return;
+  const pos = el.selectionStart;
+  const before = toPlainUpper(v.slice(0, pos)).length;
+  el.value = fixed;
+  try{ el.setSelectionRange(before, before); }catch(e){}
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const el = document.getElementById('nameInput');
+  if(!el) return;
+  el.addEventListener('compositionstart', ()=>{ el._composing = true; });
+  el.addEventListener('compositionend', ()=>{ el._composing = false; normalizeNameInput(el); });
+});
+
 function startTest(){
-  studentName = document.getElementById('nameInput').value.trim();
+  studentName = toPlainUpper(document.getElementById('nameInput').value).replace(/\s+/g,' ').trim();
   studentClass = document.getElementById('clsInput').value.trim();
   if(!studentName){ alert("Please enter your name."); return; }
   document.getElementById('startScreen').style.display = 'none';
